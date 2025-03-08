@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Random Walk Visualization</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        .nav-container {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .nav-button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            text-align: center;
+        }
+        .visual-container {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-top: 20px;
+        }
+        .visual-column {
+            flex: 1;
+            max-width: 600px;
+        }
+        .visual-column img {
+            width: 100%;
+            height: 400px; /* Fixed height for equal size */
+            object-fit: contain;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        input[type="number"] {
+            padding: 8px;
+            font-size: 16px;
+            width: 200px;
+        }
+        button {
+            padding: 8px 16px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+        }
+        h2 {
+            margin: 20px 0;
+            color: #333;
+        }
+        .about-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 30px;
+            margin-top: 30px;
+        }
+        .author-card {
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        .author-photo {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin: 0 auto 15px;
+        }
+        .hidden {
+            display: none;
+        }
+
+        /* Compact table styling */
+        .compact-table-container {
+            margin-top: 20px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            overflow: auto; /* For horizontal scrolling on small screens */
+        }
+
+        .compact-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85em;
+            margin: 0;
+        }
+
+        .compact-table th,
+        .compact-table td {
+            padding: 6px 8px;
+            border-bottom: 1px solid #dee2e6;
+            text-align: left;
+        }
+
+        .compact-table th {
+            background-color: #4CAF50;
+            color: white;
+            font-weight: bold;
+        }
+
+        .compact-table tr:hover {
+            background-color: #e9f5df;
+        }
+
+        /* Extra small screens */
+        @media (max-width: 600px) {
+            .compact-table {
+                font-size: 0.75em;
+            }
+            .compact-table td,
+            .compact-table th {
+                padding: 4px 6px;
+            }
+        }
+
+        /* Loading Overlay */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5); /* Semi-transparent background */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999; /* Ensure it overlays everything */
+        }
+
+        .loader {
+            border: 8px solid #f3f3f3; /* Light gray border */
+            border-top: 8px solid #4CAF50; /* Green spinning part */
+            border-radius: 50%; /* Makes it circular */
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite; /* Spinning animation */
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+
+<body>
+    <div id="loadingOverlay" class="loading-overlay" style="display: none;">
+        <div class="loader"></div>
+    </div>
+
+    <div class="nav-container">
+        <button class="nav-button" onclick="showSection('home')">Abstract</button>
+        <button class="nav-button" onclick="showSection('model')">Model Simulation</button>
+        <button class="nav-button" onclick="showSection('about')">About</button>
+    </div>
+
+    <!-- Home Section -->
+    <div id="home" class="container">
+        <h1>Title of the Research Article</h1>
+        <div class="abstract">
+            <h2>Abstract</h2>
+            <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.</p>
+        </div>
+    </div>
+
+    <!-- Model Simulation Section -->
+    <div id="model" class="container hidden">
+        <h1>Random Walk on a Directed Weighted Graph</h1>
+        <form method="POST" onsubmit="refreshAnimation()">
+            <label for="vertex_name">Enter starting vertex:</label>
+            <input type="number" id="vertex_name" name="vertex_name" min="0" required>
+            <button type="submit">Generate Visualization</button>
+        </form>
+
+        {% if png_path and gif_path %}
+        <div class="visual-container">
+            <div class="visual-column">
+                <h2>Initial State Preview</h2>
+                <img id="preview" 
+                     src="{{ png_path }}?v={{ range(1, 1000000) | random }}" 
+                     alt="Graph Preview">
+            </div>
+            <div class="visual-column">
+                <h2>Random Walk Animation</h2>
+                <img id="animation" 
+                     src="{{ gif_path }}?v={{ range(1, 1000000) | random }}" 
+                     alt="Process Animation"
+                     loop>
+            </div>
+            <div class="compact-table-container">
+                <table class="compact-table">
+                    <tr>
+                        <th>Participant ID</th>
+                        <th>Share (%)</th>
+                    </tr>
+                    {% for participant, share in participants|zip(shares) %}
+                    <tr>
+                        <td>{{ participant }}</td>
+                        <td>{{ "{:.1f}%".format(share * 100) }}</td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="2">No ownership data found</td></tr>
+                    {% endfor %}
+                </table>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- About Section -->
+    <div id="about" class="container hidden">
+        <h1>About the Authors</h1>
+        <div class="about-grid">
+            <div class="author-card">
+                <img src="author1.jpg" alt="Author 1" class="author-photo">
+                <h3>Author Name 1</h3>
+                <p>Affiliation information for Author 1</p>
+            </div>
+            <div class="author-card">
+                <img src="author2.jpg" alt="Author 2" class="author-photo">
+                <h3>Author Name 2</h3>
+                <p>Affiliation information for Author 2</p>
+            </div>
+            <div class="author-card">
+                <img src="author3.jpg" alt="Author 3" class="author-photo">
+                <h3>Author Name 3</h3>
+                <p>Affiliation information for Author 3</p>
+            </div>
+            <div class="author-card">
+                <img src="author4.jpg" alt="Author 4" class="author-photo">
+                <h3>Author Name 4</h3>
+                <p>Affiliation information for Author 4</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function showSection(sectionId) {
+        const currentScroll = window.pageYOffset;
+        document.querySelectorAll('.container').forEach(div => {
+            div.classList.add('hidden');
+        });
+        document.getElementById(sectionId).classList.remove('hidden');
+        window.scrollTo(0, currentScroll);
+    }
+
+        function refreshAnimation() {
+            const img = document.getElementById('animation');
+            if (img) {
+                // Force reload with cache busting
+                const newSrc = "{{ gif_url }}" + "&t=" + Date.now();
+                img.src = newSrc;
+
+                // Restart animation
+                img.style.display = 'none';
+                img.offsetHeight; // Trigger reflow
+                img.style.display = 'block';
+            }
+
+            // Clear input field and focus
+            const input = document.getElementById('vertex_input');
+            input.value = '';
+            input.focus();
+        }
+
+        
+        showSection('model');
+    </script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Get the form element
+            const form = document.querySelector('form');
+        
+            // Show the loading overlay when the form is submitted
+            form.addEventListener('submit', function () {
+                const loadingOverlay = document.getElementById('loadingOverlay');
+                loadingOverlay.style.display = 'flex'; // Show the overlay
+            });
+        
+            // Hide the loading overlay when the page reloads or new content is rendered
+            window.addEventListener('load', function () {
+                const loadingOverlay = document.getElementById('loadingOverlay');
+                loadingOverlay.style.display = 'none'; // Hide the overlay
+            });
+        });
+    </script>
+</body>
+</html>
